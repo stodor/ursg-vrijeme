@@ -17,10 +17,49 @@ class Vrijeme:
     VRIJEME_ID = 4
 
     def NazivVjetra(smjer):
-      nazivi_vjetrova = ["sjeverni","sjeveroistočni","istočni","jugoistočni","južni","jugozapadni","zapadni","sjeverozapadni"]
-      naziv = nazivi_vjetrova[int(((float(smjer)+(360/(len(nazivi_vjetrova)*2)))%360)/(360/len(nazivi_vjetrova)))]
+      smjerovi_vjetrova = ["sjeverni","sjeveroistočni","istočni","jugoistočni","južni","jugozapadni","zapadni","sjeverozapadni"]
+      naziv = smjerovi_vjetrova[int(((float(smjer)+(360/(len(smjerovi_vjetrova)*2)))%360)/(360/len(smjerovi_vjetrova)))]
 
       return naziv
+
+    def PrognozaVjetra():
+      nazivi_vjetrova = ["tišina","lahor","povjetarac","slab vjetar","umjeren vjetar","umjereno jak vjetar","jak vjetar","žestoki vjetar","olujni vjetar","jak olujni vjetar","orkanski vjetar","jak orkanski vjetar","orkan"]
+      # Beaufortova ljestvica
+      brzina = float(Vrijeme.DobaviPodatke(JACINA_VJETRA))
+      
+
+      if(brzina <= 0.3):
+        vjetar_indeks = 0
+      elif(0.3 < brzina <= 1.5):
+        vjetar_indeks = 1
+      elif(1.5 < brzina <= 3.3):
+        vjetar_indeks = 2
+      elif(3.3 < brzina <= 5.5):
+        vjetar_indeks = 3
+      elif(5.5 < brzina <= 7.9):
+        vjetar_indeks = 4
+      elif(7.9 < brzina <= 10.7):
+        vjetar_indeks = 5
+      elif(10.7 < brzina <= 13.8):
+        vjetar_indeks = 6
+      elif(13.8 < brzina <= 17.1):
+        vjetar_indeks = 7
+      elif(17.1 < brzina <= 20.7):
+        vjetar_indeks = 8
+      elif(20.7 < brzina <= 24.4):
+        vjetar_indeks = 9
+      elif(24.4 < brzina <= 28.4):
+        vjetar_indeks = 10
+      elif(28.4 < brzina <= 32.6):
+        vjetar_indeks = 11
+      else:
+        vjetar_indeks = 12
+
+      smjer = Vrijeme.DobaviPodatke(SMJER_VJETRA)
+      smjer_vjetra_naziv = Vrijeme.NazivVjetra(smjer)
+      prognoza_tekst = "." if(vjetar_indeks==0) else ", te puše {0} {1}.".format(smjer_vjetra_naziv, nazivi_vjetrova[vjetar_indeks])
+      
+      return prognoza_tekst
     
     def OpisVremena():
       opisi_vremena = {
@@ -169,4 +208,4 @@ class Vrijeme:
       temperatura = Vrijeme.DobaviPodatke(TEMPERATURA)
       opis_vremena = Vrijeme.OpisVremena()
 
-      print("{0}. {1} je sat{2} {3}. Vani je {4}°C te je {5}.".format(Vrijeme.UvodniPozdrav(), Vrijeme.DobaviSat(), sat_nastavak, minuta_tekst, Vrijeme.DobaviPodatke(TEMPERATURA), Vrijeme.OpisVremena()))
+      print("{0}. {1} je sat{2} {3}. Vani je {4}°C, {5} je{6}".format(Vrijeme.UvodniPozdrav(), Vrijeme.DobaviSat(), sat_nastavak, minuta_tekst, Vrijeme.DobaviPodatke(TEMPERATURA), Vrijeme.OpisVremena(), Vrijeme.PrognozaVjetra()))
