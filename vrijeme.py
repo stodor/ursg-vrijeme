@@ -1,14 +1,8 @@
 import urllib.request
-from enum import Enum
 
 class Vrijeme:
 
- #   def __Print2():
-    #    print("B")
-
-  #  def Print():
-  #      Vrijeme._Vrijeme__Print2()
-
+    # Enum zamjena
     global SMJER_VJETRA, JACINA_VJETRA, NAZIV_VJETRA, TEMPERATURA, VRIJEME_ID
     SMJER_VJETRA = 0
     JACINA_VJETRA = 1
