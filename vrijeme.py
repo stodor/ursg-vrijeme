@@ -1,27 +1,31 @@
 import urllib.request
+import json
+from enum import Enum
+
+class Podatak(Enum):
+  SMJER_VJETRA = 0
+  JACINA_VJETRA = 1
+  NAZIV_SMJERA_VJETRA = 2
+  TEMPERATURA = 3
+  VRIJEME_ID = 4
+  TEXT = 5
+  AUDIO = 6
+  SAT = 7
+  MINUTA = 8
 
 class Vrijeme:
 
-    # Enum zamjena
-    global SMJER_VJETRA, JACINA_VJETRA, NAZIV_VJETRA, TEMPERATURA, VRIJEME_ID
-    SMJER_VJETRA = 0
-    JACINA_VJETRA = 1
-    NAZIV_VJETRA = 2
-    TEMPERATURA = 3
-    VRIJEME_ID = 4
-
-    def NazivVjetra(smjer):
+    def NazivSmjerVjetra(self, smjer):
       smjerovi_vjetrova = ["sjeverni","sjeveroistočni","istočni","jugoistočni","južni","jugozapadni","zapadni","sjeverozapadni"]
       naziv = smjerovi_vjetrova[int(((float(smjer)+(360/(len(smjerovi_vjetrova)*2)))%360)/(360/len(smjerovi_vjetrova)))]
 
       return naziv
 
-    def PrognozaVjetra():
+    def NazivVjetra(self, vrsta_prognoze):
       nazivi_vjetrova = ["tišina","lahor","povjetarac","slab vjetar","umjeren vjetar","umjereno jak vjetar","jak vjetar","žestoki vjetar","olujni vjetar","jak olujni vjetar","orkanski vjetar","jak orkanski vjetar","orkan"]
       # Beaufortova ljestvica
-      brzina = float(Vrijeme.DobaviPodatke(JACINA_VJETRA))
+      brzina = float(Vrijeme().DobaviPodatke(Podatak.JACINA_VJETRA))
       
-
       if(brzina <= 0.3):
         vjetar_indeks = 0
       elif(0.3 < brzina <= 1.5):
@@ -49,13 +53,17 @@ class Vrijeme:
       else:
         vjetar_indeks = 12
 
-      smjer = Vrijeme.DobaviPodatke(SMJER_VJETRA)
-      smjer_vjetra_naziv = Vrijeme.NazivVjetra(smjer)
+      smjer = Vrijeme().DobaviPodatke(Podatak.SMJER_VJETRA)
+      smjer_vjetra_naziv = Vrijeme().NazivSmjerVjetra(smjer)
       prognoza_tekst = "." if(vjetar_indeks==0) else ", te puše {0} {1}.".format(smjer_vjetra_naziv, nazivi_vjetrova[vjetar_indeks])
+      prognoza_audio = "" if(vjetar_indeks==0) else " te puše {0} {1}".format(smjer_vjetra_naziv, nazivi_vjetrova[vjetar_indeks])
       
-      return prognoza_tekst
+      if(vrsta_prognoze == Podatak.TEXT):
+        return prognoza_tekst
+      elif(vrsta_prognoze == Podatak.AUDIO):
+        return prognoza_audio
     
-    def OpisVremena():
+    def OpisVremena(self):
       opisi_vremena = {
         200 : "thunderstorm with light rain",
         201 : "thunderstorm with rain",
@@ -112,12 +120,12 @@ class Vrijeme:
         803 : "broken clouds: 51-84%",
         804 : "overcast clouds: 85-100%"
       }
-      vrijeme_id = Vrijeme.DobaviPodatke(VRIJEME_ID)
+      vrijeme_id = Vrijeme().DobaviPodatke(Podatak.VRIJEME_ID)
       return opisi_vremena.get(int(vrijeme_id))
 
 
 
-    def CepanjeBrojeva(broj):
+    def CepanjeBrojeva(self, broj):
       broj = list(str(broj))
       negativni_broj = broj[0] == "-"
 
@@ -143,63 +151,62 @@ class Vrijeme:
 
 
 
-    def DobaviSat():
+    def DobaviSatIMinutu(self, podatak):
       stranica = str(urllib.request.urlopen('http://worldtimeapi.org/api/timezone/Europe/Zagreb.txt').read())
       sat = int(stranica.split()[3][11:13])
-  
-      return sat
-
-    def DobaviMinutu():
-      stranica = str(urllib.request.urlopen('http://worldtimeapi.org/api/timezone/Europe/Zagreb.txt').read())
       minuta = int(stranica.split()[3][14:16])
 
-      return minuta
+      if(podatak == Podatak.SAT):
+        return sat
+      elif(podatak == Podatak.MINUTA):
+        return minuta
 
 
-    def UvodniPozdrav():
-      sat = Vrijeme.DobaviSat()
+    def UvodniPozdrav(self):
+      sat = Vrijeme().DobaviSatIMinutu(Podatak.SAT)
       pozdrav = "Dobro jutro dragi slušatelji" if 5 <= sat < 12 else "Dobar dan dragi slušatelji" if 12<= sat < 17 else "Dobra večer dragi slušatelji"
 
       return pozdrav
 
 
-    def DobaviPodatke(potreban_podatak):
-      lista_podataka = []
-
-      stranica = str(urllib.request.urlopen("https://api.openweathermap.org/data/2.5/weather?q=zagreb&APPID=b0cf9d4de9f5ff964a853090bd6cb6b2&units=metric").read()).replace('}','').replace('{','').replace('[','').replace(']','')
-      stranica = stranica[2:].replace('"','').replace(',',':').split(':')
-      for i in stranica:
-        lista_podataka.append(i)
-      stranica = None
-
+    def DobaviPodatke(self, potreban_podatak):      
       
-      smjer_vjetra = 0 if "deg" not in lista_podataka else lista_podataka[lista_podataka.index("deg")+1]
-      naziv_vjetra = Vrijeme.NazivVjetra(smjer_vjetra)
-      jacina_vjetra = 0 if "wind" not in lista_podataka else lista_podataka[lista_podataka.index("wind")+2]
-      temperatura = 0 if "temp" not in lista_podataka else lista_podataka[lista_podataka.index("temp")+1]
-      vrijeme_id = lista_podataka[lista_podataka.index("id")+1]
+      podatci = json.loads(urllib.request.urlopen("https://api.openweathermap.org/data/2.5/weather?q=zagreb&APPID=b0cf9d4de9f5ff964a853090bd6cb6b2&units=metric").read().decode())
+     
+      smjer_vjetra = 0 if "deg" not in podatci["wind"] else podatci["wind"]["deg"]
+      naziv_smjera_vjetra = Vrijeme().NazivSmjerVjetra(smjer_vjetra)
+      jacina_vjetra = 0 if "speed" not in podatci["wind"] else podatci["wind"]["speed"]
+      temperatura = 0 if "temp" not in podatci["main"] else podatci["main"]["temp"]
+      vrijeme_id = podatci["weather"][0]["id"]
 
-      if(potreban_podatak == SMJER_VJETRA):
+      if(potreban_podatak == Podatak.SMJER_VJETRA):
         return smjer_vjetra
-      elif(potreban_podatak == JACINA_VJETRA):
+      elif(potreban_podatak == Podatak.JACINA_VJETRA):
         return jacina_vjetra
-      elif(potreban_podatak == NAZIV_VJETRA):
-        return naziv_vjetra
-      elif(potreban_podatak == TEMPERATURA):
+      elif(potreban_podatak == Podatak.NAZIV_SMJERA_VJETRA):
+        return naziv_smjera_vjetra
+      elif(potreban_podatak == Podatak.TEMPERATURA):
         return temperatura
-      elif(potreban_podatak == VRIJEME_ID):
+      elif(potreban_podatak == Podatak.VRIJEME_ID):
         return vrijeme_id
-      
-      stranica = None
 
-    def TekstualnaPrognoza():
-      uvod = Vrijeme.UvodniPozdrav()
-      sat = Vrijeme.DobaviSat()
+    def Prognoza(self, vrsta_prognoze):
+      uvod = Vrijeme().UvodniPozdrav()
+      naziv_vjetra_tekst = Vrijeme().NazivVjetra(Podatak.TEXT)
+      naziv_vjetra_audio = Vrijeme().NazivVjetra(Podatak.AUDIO)
+      sat = Vrijeme().DobaviSatIMinutu(Podatak.SAT)
+      sat_audio = " ".join(Vrijeme().CepanjeBrojeva(Vrijeme().DobaviSatIMinutu(Podatak.SAT)))
       sat_nastavak = "" if (int(str(sat)[-1]) == 1 and sat != 11) else "a" if (int(str(sat)[-1]) in [2,3,4] and int(str(sat)[0]) != 1) else "i"
-      minuta = Vrijeme.DobaviMinutu()
+      minuta = Vrijeme().DobaviSatIMinutu(Podatak.MINUTA)
       minuta_nastavak = "e" if (int(str(minuta)[-1]) in [2,3,4] and int(str(minuta)[0]) != 1) else "a"
-      minuta_tekst = "i {0} minut{1}".format(Vrijeme.DobaviMinutu(), minuta_nastavak) if (minuta != 0) else ""
-      temperatura = Vrijeme.DobaviPodatke(TEMPERATURA)
-      opis_vremena = Vrijeme.OpisVremena()
+      minuta_tekst = "i {0} minut{1}".format(Vrijeme().DobaviSatIMinutu(Podatak.MINUTA), minuta_nastavak) if (minuta != 0) else ""
+      minuta_tekst_audio = "i {0} minut{1}".format(" i ".join(Vrijeme().CepanjeBrojeva(Vrijeme().DobaviSatIMinutu(Podatak.MINUTA))), minuta_nastavak) if (minuta != 0) else ""
+      temperatura = Vrijeme().DobaviPodatke(Podatak.TEMPERATURA)
+      temperatura_audio = " ".join(Vrijeme().CepanjeBrojeva(int(Vrijeme().DobaviPodatke(Podatak.TEMPERATURA))))
+      temperatura_nastavak = "anj" if (int(str(int(Vrijeme().DobaviPodatke(Podatak.TEMPERATURA)))[-1]) == 1 and int(str(int(Vrijeme().DobaviPodatke(Podatak.TEMPERATURA)))) != 11) else "nja"
+      opis_vremena = Vrijeme().OpisVremena()
 
-      print("{0}. {1} je sat{2} {3}. Vani je {4}°C, {5} je{6}".format(Vrijeme.UvodniPozdrav(), Vrijeme.DobaviSat(), sat_nastavak, minuta_tekst, Vrijeme.DobaviPodatke(TEMPERATURA), Vrijeme.OpisVremena(), Vrijeme.PrognozaVjetra()))
+      if(vrsta_prognoze == Podatak.TEXT):
+        print("{0}. {1} je sat{2} {3}. Vani je {4}°C, {5} je{6}".format(uvod, sat, sat_nastavak, minuta_tekst, temperatura, opis_vremena, naziv_vjetra_tekst))
+      elif(vrsta_prognoze == Podatak.AUDIO):
+        return "{0} {1} je sat{2} {3} Vani je {4} stup{5} {6} je{7}".format(uvod, sat_audio, sat_nastavak, minuta_tekst_audio, temperatura_audio, temperatura_nastavak, opis_vremena, naziv_vjetra_audio).lower().split()
