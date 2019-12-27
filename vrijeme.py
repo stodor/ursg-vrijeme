@@ -15,6 +15,36 @@ class Podatak(Enum):
 
 class Vrijeme:
 
+    def DobaviPodatke(self, potreban_podatak):      
+      
+      podatci = json.loads(urllib.request.urlopen("https://api.openweathermap.org/data/2.5/weather?q=zagreb&APPID=b0cf9d4de9f5ff964a853090bd6cb6b2&units=metric").read().decode())
+      
+      smjer_vjetra = 0 if "deg" not in podatci["wind"] else podatci["wind"]["deg"]
+      naziv_smjera_vjetra = Vrijeme().NazivSmjerVjetra(smjer_vjetra)
+      jacina_vjetra = 0 if "speed" not in podatci["wind"] else podatci["wind"]["speed"]
+      temperatura = 0 if "temp" not in podatci["main"] else podatci["main"]["temp"]
+      vremena_u_podacima = podatci["weather"]
+      vremena_idjevi = []
+
+      i = 0
+      while(i < len(vremena_u_podacima)):
+        vremena_idjevi.append(vremena_u_podacima[i]["id"])
+        i +=1
+      i = 0
+
+
+      if(potreban_podatak == Podatak.SMJER_VJETRA):
+        return smjer_vjetra
+      elif(potreban_podatak == Podatak.JACINA_VJETRA):
+        return jacina_vjetra
+      elif(potreban_podatak == Podatak.NAZIV_SMJERA_VJETRA):
+        return naziv_smjera_vjetra
+      elif(potreban_podatak == Podatak.TEMPERATURA):
+        return temperatura
+      elif(potreban_podatak == Podatak.VRIJEME_ID):
+        return vremena_idjevi
+
+
     def NazivSmjerVjetra(self, smjer):
       smjerovi_vjetrova = ["sjeverni","sjeveroistočni","istočni","jugoistočni","južni","jugozapadni","zapadni","sjeverozapadni"]
       naziv = smjerovi_vjetrova[int(((float(smjer)+(360/(len(smjerovi_vjetrova)*2)))%360)/(360/len(smjerovi_vjetrova)))]
@@ -24,6 +54,7 @@ class Vrijeme:
     def NazivVjetra(self, vrsta_prognoze):
       nazivi_vjetrova = ["tišina","lahor","povjetarac","slab vjetar","umjeren vjetar","umjereno jak vjetar","jak vjetar","žestoki vjetar","olujni vjetar","jak olujni vjetar","orkanski vjetar","jak orkanski vjetar","orkan"]
       # Beaufortova ljestvica
+
       brzina = float(Vrijeme().DobaviPodatke(Podatak.JACINA_VJETRA))
       
       if(brzina <= 0.3):
@@ -64,7 +95,7 @@ class Vrijeme:
         return prognoza_audio
     
     def OpisVremena(self):
-      opisi_vremena = {
+      lista_opisa = {
         200 : "thunderstorm with light rain",
         201 : "thunderstorm with rain",
         202 : "thunderstorm with heavy rain",
@@ -121,7 +152,15 @@ class Vrijeme:
         804 : "overcast clouds: 85-100%"
       }
       vrijeme_id = Vrijeme().DobaviPodatke(Podatak.VRIJEME_ID)
-      return opisi_vremena.get(int(vrijeme_id))
+      opisi_vremena = []
+
+      i = 0
+      while(i < len(vrijeme_id)):
+        opisi_vremena.append(lista_opisa[vrijeme_id[i]])
+        i += 1
+      i = 0
+      
+      return "".join(opisi_vremena) if (len(opisi_vremena) == 1) else " i ".join(opisi_vremena)
 
 
 
@@ -132,11 +171,12 @@ class Vrijeme:
       if(negativni_broj):
         broj.remove(broj[0])
 
-      indeks = 0 
+      i = 0 
       for brojka in broj :
-        brojka = int(brojka) * pow(10, (len(broj)-(indeks+1)))        
-        broj[indeks] = str(brojka)
-        indeks +=1
+        brojka = int(brojka) * pow(10, (len(broj)-(i+1)))        
+        broj[i] = str(brojka)
+        i +=1
+      i = 0 
     
       if(len(broj) > 1 and int(broj[-2])+int(broj[-1]) > 10 and int(broj[-2])+int(broj[-1]) < 20):
         broj[-2] = str(int(broj[-2])+int(broj[-1]))
@@ -164,31 +204,9 @@ class Vrijeme:
 
     def UvodniPozdrav(self):
       sat = Vrijeme().DobaviSatIMinutu(Podatak.SAT)
-      pozdrav = "Dobro jutro dragi slušatelji" if 5 <= sat < 12 else "Dobar dan dragi slušatelji" if 12<= sat < 17 else "Dobra večer dragi slušatelji"
+      pozdrav = "Dobro jutro dragi slušatelji" if 5 <= sat < 12 else "Dobar dan dragi slušatelji" if 12 <= sat < 17 else "Dobra večer dragi slušatelji"
 
       return pozdrav
-
-
-    def DobaviPodatke(self, potreban_podatak):      
-      
-      podatci = json.loads(urllib.request.urlopen("https://api.openweathermap.org/data/2.5/weather?q=zagreb&APPID=b0cf9d4de9f5ff964a853090bd6cb6b2&units=metric").read().decode())
-     
-      smjer_vjetra = 0 if "deg" not in podatci["wind"] else podatci["wind"]["deg"]
-      naziv_smjera_vjetra = Vrijeme().NazivSmjerVjetra(smjer_vjetra)
-      jacina_vjetra = 0 if "speed" not in podatci["wind"] else podatci["wind"]["speed"]
-      temperatura = 0 if "temp" not in podatci["main"] else podatci["main"]["temp"]
-      vrijeme_id = podatci["weather"][0]["id"]
-
-      if(potreban_podatak == Podatak.SMJER_VJETRA):
-        return smjer_vjetra
-      elif(potreban_podatak == Podatak.JACINA_VJETRA):
-        return jacina_vjetra
-      elif(potreban_podatak == Podatak.NAZIV_SMJERA_VJETRA):
-        return naziv_smjera_vjetra
-      elif(potreban_podatak == Podatak.TEMPERATURA):
-        return temperatura
-      elif(potreban_podatak == Podatak.VRIJEME_ID):
-        return vrijeme_id
 
     def Prognoza(self, vrsta_prognoze):
       uvod = Vrijeme().UvodniPozdrav()
