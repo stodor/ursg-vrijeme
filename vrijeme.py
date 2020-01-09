@@ -14,16 +14,18 @@ class Podatak(Enum):
   MINUTA = 8
 
 class Vrijeme:
+    podatci = json.loads(urllib.request.urlopen("https://api.openweathermap.org/data/2.5/weather?q=zagreb&APPID=b0cf9d4de9f5ff964a853090bd6cb6b2&units=metric").read().decode())
+    stranica = str(urllib.request.urlopen('http://worldtimeapi.org/api/timezone/Europe/Zagreb.txt').read())
 
     def DobaviPodatke(self, potreban_podatak):      
       
-      podatci = json.loads(urllib.request.urlopen("https://api.openweathermap.org/data/2.5/weather?q=zagreb&APPID=b0cf9d4de9f5ff964a853090bd6cb6b2&units=metric").read().decode())
+      #podatci = json.loads(urllib.request.urlopen("https://api.openweathermap.org/data/2.5/weather?q=zagreb&APPID=b0cf9d4de9f5ff964a853090bd6cb6b2&units=metric").read().decode())
       
-      smjer_vjetra = 0 if "deg" not in podatci["wind"] else podatci["wind"]["deg"]
+      smjer_vjetra = 0 if "deg" not in Vrijeme.podatci["wind"] else Vrijeme.podatci["wind"]["deg"]
       naziv_smjera_vjetra = Vrijeme().NazivSmjerVjetra(smjer_vjetra)
-      jacina_vjetra = 0 if "speed" not in podatci["wind"] else podatci["wind"]["speed"]
-      temperatura = 0 if "temp" not in podatci["main"] else podatci["main"]["temp"]
-      vremena_u_podacima = podatci["weather"]
+      jacina_vjetra = 0 if "speed" not in Vrijeme.podatci["wind"] else Vrijeme.podatci["wind"]["speed"]
+      temperatura = 0 if "temp" not in Vrijeme.podatci["main"] else Vrijeme.podatci["main"]["temp"]
+      vremena_u_podacima = Vrijeme.podatci["weather"]
       vremena_idjevi = []
 
       i = 0
@@ -192,9 +194,9 @@ class Vrijeme:
 
 
     def DobaviSatIMinutu(self, podatak):
-      stranica = str(urllib.request.urlopen('http://worldtimeapi.org/api/timezone/Europe/Zagreb.txt').read())
-      sat = int(stranica.split()[3][11:13])
-      minuta = int(stranica.split()[3][14:16])
+      #stranica = str(urllib.request.urlopen('http://worldtimeapi.org/api/timezone/Europe/Zagreb.txt').read())
+      sat = int(Vrijeme.stranica.split()[3][11:13])
+      minuta = int(Vrijeme.stranica.split()[3][14:16])
 
       if(podatak == Podatak.SAT):
         return sat
